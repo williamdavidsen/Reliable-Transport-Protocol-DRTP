@@ -32,6 +32,12 @@ The server can also write to a selected output filename:
 python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
 ```
 
+Use `--verbose` when checking packet-level behavior:
+
+```bash
+python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5 --verbose
+```
+
 Then run the client:
 
 ```bash

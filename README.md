@@ -145,6 +145,8 @@ To choose the output filename:
 python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
 ```
 
+Add `--verbose` to either mode when you want packet-level logs.
+
 ### Start the Client
 
 ```bash
@@ -169,6 +171,7 @@ python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 | `-w`, `--window` | Client | Sliding window size |
 | `-d`, `--discard` | Server | Drops a selected packet once for testing |
 | `-o`, `--output` | Server | Optional filename for the received file |
+| `-v`, `--verbose` | Both | Prints packet-level logs |
 
 ## Protocol Overview
 

@@ -16,7 +16,7 @@ from protocol import (
     unpack_header,
 )
 
-def server_start(ip, port, discard_seq, output_filename=None):
+def server_start(ip, port, discard_seq, output_filename=None, verbose=False):
     """Receive a file reliably over UDP using DRTP."""
 
     try:
@@ -146,8 +146,9 @@ def server_start(ip, port, discard_seq, output_filename=None):
                                     print("[-] Error while writing to file: {}".format(e))
                                     break
                                 # Log successful packet reception with timestamp
-                                timestamp = datetime.now().strftime("%H:%M:%S.%f")
-                                print(f"{timestamp} -- packet {seq} is received")
+                                if verbose:
+                                    timestamp = datetime.now().strftime("%H:%M:%S.%f")
+                                    print(f"{timestamp} -- packet {seq} is received")
                                 # Prepare and send ACK for received packet
                                 ack_header = pack_header(ack=seq, flags=FLAG_ACK)
                                 try:
@@ -155,11 +156,13 @@ def server_start(ip, port, discard_seq, output_filename=None):
                                 except socket.error as e:
                                     print("[-] Socket error during sendto: {}".format(e))
                                     break
-                                timestamp = datetime.now().strftime("%H:%M:%S.%f")
-                                print(f"{timestamp} -- sending ack for the received {seq}")
+                                if verbose:
+                                    timestamp = datetime.now().strftime("%H:%M:%S.%f")
+                                    print(f"{timestamp} -- sending ack for the received {seq}")
                                 expected_seq += 1
                             else:
-                                print(f"{datetime.now().strftime('%H:%M:%S.%f')} -- out-of-order packet {seq} is received")
+                                if verbose:
+                                    print(f"{datetime.now().strftime('%H:%M:%S.%f')} -- out-of-order packet {seq} is received")
                         else:
                             ack_header = pack_header(ack=expected_seq - 1, flags=FLAG_ACK)
                             try:
