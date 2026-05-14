@@ -171,6 +171,12 @@ The client first establishes a connection with a three-way handshake. During tra
 
 <img src="docs/screenshots/retransmission-test.png" alt="DRTP retransmission test" width="100%">
 
+Run the automated tests:
+
+```bash
+python -m unittest discover -s tests
+```
+
 The project was tested with:
 
 - Different window sizes: `3`, `5`, `10`, `15`, `20`, `25`
