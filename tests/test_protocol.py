@@ -15,6 +15,8 @@ from protocol import (  # noqa: E402
     pack_header,
     unpack_header,
 )
+from client import prepare_packets  # noqa: E402
+from server import parse_first_packet  # noqa: E402
 
 
 class ProtocolHeaderTests(unittest.TestCase):
@@ -33,6 +35,18 @@ class ProtocolHeaderTests(unittest.TestCase):
 
     def test_payload_size_matches_packet_layout(self):
         self.assertEqual(HEADER_SIZE + PAYLOAD_SIZE, 1000)
+
+    def test_first_packet_contains_filename_and_data(self):
+        sample_file = ROOT / "tests" / "sample_payload.txt"
+        sample_file.write_text("hello drtp")
+        try:
+            packet = prepare_packets(str(sample_file))[0]
+            filename, data = parse_first_packet(packet)
+
+            self.assertEqual(filename, str(sample_file))
+            self.assertEqual(data, b"hello drtp")
+        finally:
+            sample_file.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
