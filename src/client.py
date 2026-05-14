@@ -3,35 +3,15 @@ import struct
 import sys
 from datetime import datetime
 
-# Protocol Flag Constants (must match server and application)
-FLAG_FIN = 1 << 0  # FIN flag: indicates connection teardown
-FLAG_ACK = 1 << 1  # ACK flag: indicates acknowledgment
-FLAG_SYN = 1 << 2  # SYN flag: indicates connection establishment (synchronization)
-FLAG_RST = 1 << 3  # RST flag: indicates connection reset (not always used)
+# Protocol flags shared by the client and server.
+FLAG_FIN = 1 << 0
+FLAG_ACK = 1 << 1
+FLAG_SYN = 1 << 2
+FLAG_RST = 1 << 3
 
 def client_start(ip, port, filename, window_size):
-    """
-    Description:
-        Initiates and manages a DRTP client to send a file reliably over UDP.
-        Handles connection establishment (three-way handshake), data transfer using
-        sliding window protocol, and file reading.
-    Arguments:
-        ip (str): IP address of the server in dotted decimal notation (e.g., '10.0.1.2').
-        port (int): UDP port number for the server (1024-65535).
-        filename (str): Path to the file to send.
-        window_size (int): Sliding window size for Go-Back-N protocol.
-    Use of other input and output parameters in the function:
-        - server_addr: Tuple of (ip, port) for the server.
-        - client_socket: The UDP socket for communication.
-        - All flags and packet structures must match those expected by the server.
-    Returns:
-        None. Exits with sys.exit() on fatal error.
-    Exceptions:
-        - Handles socket creation, sendto/recvfrom, file opening, and struct errors.
-        - Exits and prints user-friendly error messages for all known failure cases.
-    """
+    """Send a file reliably over UDP using DRTP and Go-Back-N."""
 
-    # Attempt to create a UDP socket for the client
     try:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     except socket.error as e:
@@ -41,13 +21,11 @@ def client_start(ip, port, filename, window_size):
 
     print("Connection Establishment Phase:\n")
 
-    # --- Three-way handshake: Send SYN, wait for SYN-ACK, send ACK ---
+    # Three-way handshake: SYN, SYN-ACK, ACK.
     try:
         syn_flags = FLAG_SYN
-        # Pack SYN packet header (all fields are zero except flags)
         syn_packet = struct.pack('!HHHH', 0, 0, syn_flags, 0)
         try:
-            # Send SYN packet to server
             client_socket.sendto(syn_packet, server_addr)
         except socket.error as e:
             print("[-] Socket error during sendto: {}".format(e))
@@ -64,7 +42,6 @@ def client_start(ip, port, filename, window_size):
         except socket.error as e:
             print("[-] Socket error during recvfrom: {}".format(e))
             sys.exit(1)
-        # Unpack the header of the received SYN-ACK
         seq, ack, flags, win = struct.unpack('!HHHH', data[:8])
 
         if (flags & FLAG_SYN) and (flags & FLAG_ACK):

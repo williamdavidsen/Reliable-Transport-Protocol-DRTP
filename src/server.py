@@ -6,41 +6,16 @@ from datetime import datetime
 
 from filename_utils import get_unique_filename
 
-# Protocol Flag Constants (must match those used by client and application)
-FLAG_FIN = 1 << 0  # FIN flag: signals connection teardown
-FLAG_ACK = 1 << 1  # ACK flag: acknowledgment for packets
-FLAG_SYN = 1 << 2  # SYN flag: for connection establishment
-FLAG_RST = 1 << 3  # RST flag: reset, not commonly used
+# Protocol flags shared by the client and server.
+FLAG_FIN = 1 << 0
+FLAG_ACK = 1 << 1
+FLAG_SYN = 1 << 2
+FLAG_RST = 1 << 3
 
 def server_start(ip, port, discard_seq):
-    """
-    Description:
-        Starts the DRTP server to receive files reliably from clients via UDP.
-        Handles the three-way handshake (SYN, SYN-ACK, ACK) to establish a connection,
-        then enters the data reception and file writing phases, and finally manages
-        connection teardown via a FIN-ACK handshake. Optionally discards a specified packet
-        (by sequence number) for testing reliability.
-
-    Arguments:
-        ip (str): The IP address to bind the server socket (e.g., '10.0.1.2').
-        port (int): UDP port to listen on (1024-65535).
-        discard_seq (int): If not 999999, the server will discard the packet with this sequence number (for testing).
-
-    Use of other input and output parameters in the function:
-        - server_socket: UDP socket used for communication.
-        - addr: Client address tuple.
-        - All flags and packet structures must match the protocol definition.
-
-    Returns:
-        None. Exits or breaks on fatal error or timeout.
-
-    Exceptions:
-        - Handles all socket creation, binding, sendto/recvfrom, and struct unpacking errors.
-        - Exits or prints errors for all known failure cases.
-    """
+    """Receive a file reliably over UDP using DRTP."""
 
     try:
-        # Create and bind the UDP server socket
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         server_socket.bind((ip, port))
     except socket.error as e:
@@ -55,7 +30,6 @@ def server_start(ip, port, discard_seq):
         while True:
             server_socket.settimeout(5)
             try:
-                # Wait for the initial SYN packet to establish connection
                 data, addr = server_socket.recvfrom(1024)
             except socket.timeout:
                 print("No SYN packet received, timing out and shutting down server.")
@@ -64,13 +38,11 @@ def server_start(ip, port, discard_seq):
                 print("[-] Socket error during recvfrom: {}".format(e))
                 break
 
-            # Parse protocol header (sequence, acknowledgment, flags, window)
             seq, ack, flags, win = struct.unpack('!HHHH', data[:8])
 
             if flags & FLAG_SYN:
                 print("SYN packet is received")
                 syn_ack_flags = FLAG_SYN | FLAG_ACK
-                # Send SYN-ACK to client
                 response = struct.pack('!HHHH', 0, seq + 1, syn_ack_flags, 15)
                 try:
                     server_socket.sendto(response, addr)
