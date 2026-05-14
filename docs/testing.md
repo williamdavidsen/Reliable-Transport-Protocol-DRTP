@@ -57,6 +57,14 @@ The Mininet topology is useful for:
 - Different sliding window sizes
 - Throughput changes under delay and packet loss
 
+Start the topology from `src/`:
+
+```bash
+sudo python3 simple-topo.py
+```
+
+The default topology applies `100ms` delay on the router-to-server link. Edit `LINK_DELAY` or `PACKET_LOSS` in `simple-topo.py` to run other scenarios.
+
 ## Integrity Check
 
 After a transfer, compare the original file with the received file:
