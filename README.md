@@ -98,7 +98,8 @@ flowchart LR
 ## Requirements
 
 - Python 3
-- Standard Python library only
+- No external runtime dependencies
+- Tests also use the Python standard library only
 - Linux or Mininet environment for the full network simulation
 
 The application can also be tested locally with loopback addresses, but the intended evaluation environment is Mininet.
@@ -112,13 +113,13 @@ Run the commands from the `src/` directory.
 Terminal 1:
 
 ```bash
-python3 application.py -s -i 127.0.0.1 -p 8088
+python3 application.py -s -i 127.0.0.1 -p 8088 --verbose
 ```
 
 Terminal 2:
 
 ```bash
-python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5
+python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5 --verbose
 ```
 
 ### Start the Server

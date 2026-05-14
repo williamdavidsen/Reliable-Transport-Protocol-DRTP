@@ -9,13 +9,13 @@ The project was tested with both local loopback runs and Mininet network simulat
 Start the server:
 
 ```bash
-python3 application.py -s -i 127.0.0.1 -p 8088
+python3 application.py -s -i 127.0.0.1 -p 8088 --verbose
 ```
 
 Start the client in another terminal:
 
 ```bash
-python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5
+python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5 --verbose
 ```
 
 ## Reliability Test
