@@ -17,7 +17,7 @@ from protocol import (
     unpack_header,
 )
 
-def server_start(ip, port, discard_seq):
+def server_start(ip, port, discard_seq, output_filename=None):
     """Receive a file reliably over UDP using DRTP."""
 
     try:
@@ -118,7 +118,7 @@ def server_start(ip, port, discard_seq):
                                 filename_end = filename_start + filename_len
                                 filename = packet[filename_start:filename_end].decode()
                                 data = packet[filename_end:]
-                                new_filename = "received_" + filename
+                                new_filename = output_filename or "received_" + filename
                                 # Ensure file does not overwrite existing file
                                 new_filename = get_unique_filename(new_filename)
                                 try:

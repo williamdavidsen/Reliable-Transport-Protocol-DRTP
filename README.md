@@ -130,6 +130,12 @@ To intentionally drop one packet for retransmission testing:
 python3 application.py -s -i 10.0.1.2 -p 8088 -d 5
 ```
 
+To choose the output filename:
+
+```bash
+python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
+```
+
 ### Start the Client
 
 ```bash
@@ -153,6 +159,7 @@ python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 | `-f`, `--file` | Client | File to transfer |
 | `-w`, `--window` | Client | Sliding window size |
 | `-d`, `--discard` | Server | Drops a selected packet once for testing |
+| `-o`, `--output` | Server | Optional filename for the received file |
 
 ## Protocol Overview
 

@@ -26,6 +26,12 @@ The server can intentionally drop one packet to verify retransmission behavior:
 python3 application.py -s -i 10.0.1.2 -p 8088 -d 5
 ```
 
+The server can also write to a selected output filename:
+
+```bash
+python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
+```
+
 Then run the client:
 
 ```bash
