@@ -50,6 +50,8 @@ The goal of this project was to understand what TCP-like reliability actually re
 
 ## Architecture
 
+<img src="docs/screenshots/architecture-flow.png" alt="DRTP architecture flow" width="100%">
+
 ```mermaid
 flowchart LR
     Client[Client / Sender] -->|SYN| Server[Server / Receiver]
@@ -71,7 +73,9 @@ flowchart LR
 |   |-- architecture.md
 |   |-- testing.md
 |   `-- screenshots/
+|       |-- architecture-flow.png
 |       |-- client-transfer.png
+|       |-- retransmission-test.png
 |       `-- server-transfer.png
 `-- src/
     |-- application.py
@@ -157,6 +161,8 @@ Each DRTP packet uses an 8-byte custom header followed by up to 992 bytes of dat
 The client first establishes a connection with a three-way handshake. During transfer, the sender uses Go-Back-N with a configurable sliding window. If an acknowledgement is not received before the timeout, the sender retransmits the unacknowledged window. The server accepts packets in order and acknowledges the latest correctly received sequence number.
 
 ## Testing
+
+<img src="docs/screenshots/retransmission-test.png" alt="DRTP retransmission test" width="100%">
 
 The project was tested with:
 

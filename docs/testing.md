@@ -2,6 +2,8 @@
 
 The project was tested with both local loopback runs and Mininet network simulations.
 
+<img src="screenshots/retransmission-test.png" alt="DRTP retransmission test" width="100%">
+
 ## Quick Local Test
 
 Start the server:

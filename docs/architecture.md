@@ -2,6 +2,8 @@
 
 DRTP is a client-server file transfer application built on top of UDP. The project keeps the transport logic in the application layer instead of relying on TCP.
 
+<img src="screenshots/architecture-flow.png" alt="DRTP architecture flow" width="100%">
+
 ## Components
 
 | Component | Responsibility |
