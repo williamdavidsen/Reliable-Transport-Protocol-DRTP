@@ -16,7 +16,7 @@ FLAG_SYN = 1 << 2
 def main():
     """
     Description:
-        Main entry point for the DATA2410 Reliable Transport Protocol (DRTP) application.
+        Main entry point for the DRTP reliable transport application.
         This function parses command-line arguments, validates them, and then starts
         the application in either client or server mode based on the provided arguments.
 
@@ -38,7 +38,7 @@ def main():
     """
 
     parser = argparse.ArgumentParser(
-        description="DATA2410 Reliable Transport Protocol (DRTP)"
+        description="DRTP - Reliable Transport Protocol over UDP"
     )
     # Mutually exclusive group to ensure only one mode is selected
     group = parser.add_mutually_exclusive_group(required=True)

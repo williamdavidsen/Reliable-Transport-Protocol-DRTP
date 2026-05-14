@@ -1,8 +1,8 @@
-# DATA2410 Reliable Transport Protocol (DRTP)
+# DRTP - Reliable Transport Protocol over UDP
 
 A Python implementation of a reliable file transfer protocol built on top of UDP.
 
-This project was developed for the DATA2410 course to explore how reliability can be implemented without using TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
+I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
 
 ## Purpose
 
@@ -123,4 +123,4 @@ The project was tested with:
 - Random packet loss using `tc netem`
 - MD5 checksum comparison between the original and received files
 
-The detailed experiment results were documented separately during the course submission.
+The detailed experiment results were documented separately during development.
