@@ -5,11 +5,6 @@ import argparse
 import socket
 import sys
 
-# Protocol flags shared by the client and server.
-FLAG_FIN = 1 << 0
-FLAG_ACK = 1 << 1
-FLAG_SYN = 1 << 2
-
 def main():
     """Parse CLI arguments and start DRTP in client or server mode."""
 

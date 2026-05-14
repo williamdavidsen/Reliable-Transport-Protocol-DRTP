@@ -1,16 +1,21 @@
 import socket
-import struct
 import sys
 import time
 from datetime import datetime
 
 from filename_utils import get_unique_filename
-
-# Protocol flags shared by the client and server.
-FLAG_FIN = 1 << 0
-FLAG_ACK = 1 << 1
-FLAG_SYN = 1 << 2
-FLAG_RST = 1 << 3
+from protocol import (
+    DEFAULT_SERVER_WINDOW,
+    FLAG_ACK,
+    FLAG_FIN,
+    FLAG_SYN,
+    HEADER_SIZE,
+    RETRANSMISSION_TIMEOUT,
+    SERVER_IDLE_TIMEOUT,
+    has_flags,
+    pack_header,
+    unpack_header,
+)
 
 def server_start(ip, port, discard_seq):
     """Receive a file reliably over UDP using DRTP."""
@@ -28,7 +33,7 @@ def server_start(ip, port, discard_seq):
 
     try:
         while True:
-            server_socket.settimeout(5)
+            server_socket.settimeout(SERVER_IDLE_TIMEOUT)
             try:
                 data, addr = server_socket.recvfrom(1024)
             except socket.timeout:
@@ -38,12 +43,11 @@ def server_start(ip, port, discard_seq):
                 print("[-] Socket error during recvfrom: {}".format(e))
                 break
 
-            seq, ack, flags, win = struct.unpack('!HHHH', data[:8])
+            seq, ack, flags, win = unpack_header(data)
 
             if flags & FLAG_SYN:
                 print("SYN packet is received")
-                syn_ack_flags = FLAG_SYN | FLAG_ACK
-                response = struct.pack('!HHHH', 0, seq + 1, syn_ack_flags, 15)
+                response = pack_header(ack=seq + 1, flags=FLAG_SYN | FLAG_ACK, window=DEFAULT_SERVER_WINDOW)
                 try:
                     server_socket.sendto(response, addr)
                 except socket.error as e:
@@ -61,7 +65,7 @@ def server_start(ip, port, discard_seq):
                     print("[-] Socket error during recvfrom: {}".format(e))
                     break
 
-                seq, ack, flags, win = struct.unpack('!HHHH', data[:8])
+                seq, ack, flags, win = unpack_header(data)
             if flags & FLAG_ACK:
                 print("ACK packet is received")
                 print("Connection established")
@@ -73,7 +77,7 @@ def server_start(ip, port, discard_seq):
 
                 while True:
                     try:
-                        server_socket.settimeout(0.4)  # Short timeout for retransmissions
+                        server_socket.settimeout(RETRANSMISSION_TIMEOUT)
                         try:
                             # Wait for next data packet from client
                             packet, addr = server_socket.recvfrom(1500)
@@ -86,14 +90,12 @@ def server_start(ip, port, discard_seq):
                         if not packet:
                             break  # End of file or stream
 
-                        header = packet[:8]
-                        seq, ack, flags, win = struct.unpack('!HHHH', header)
-                        data = packet[8:]
+                        seq, ack, flags, win = unpack_header(packet)
+                        data = packet[HEADER_SIZE:]
 
                         if flags & FLAG_FIN:
                             print("FIN packet is received")
-                            fin_ack_flags = FLAG_ACK | FLAG_FIN
-                            fin_ack = struct.pack('!HHHH', 0, seq + 1, fin_ack_flags, 0)
+                            fin_ack = pack_header(ack=seq + 1, flags=FLAG_ACK | FLAG_FIN)
                             try:
                                 server_socket.sendto(fin_ack, addr)
                             except socket.error as e:
@@ -111,9 +113,11 @@ def server_start(ip, port, discard_seq):
                         if seq == expected_seq:
                             if expected_seq == 1:
                                 # The first packet contains the filename and the start of the data
-                                filename_len = packet[8]
-                                filename = packet[9:9+filename_len].decode()
-                                data = packet[9+filename_len:]
+                                filename_len = packet[HEADER_SIZE]
+                                filename_start = HEADER_SIZE + 1
+                                filename_end = filename_start + filename_len
+                                filename = packet[filename_start:filename_end].decode()
+                                data = packet[filename_end:]
                                 new_filename = "received_" + filename
                                 # Ensure file does not overwrite existing file
                                 new_filename = get_unique_filename(new_filename)
@@ -127,7 +131,7 @@ def server_start(ip, port, discard_seq):
                                     break
                             else:
                                 # For all packets except the first, data is the payload after header
-                                data = packet[8:]
+                                data = packet[HEADER_SIZE:]
                             if data:
                                 try:
                                     # Write received data to file
@@ -140,7 +144,7 @@ def server_start(ip, port, discard_seq):
                                 timestamp = datetime.now().strftime("%H:%M:%S.%f")
                                 print(f"{timestamp} -- packet {seq} is received")
                                 # Prepare and send ACK for received packet
-                                ack_header = struct.pack('!HHHH', 0, seq, FLAG_ACK, 0)
+                                ack_header = pack_header(ack=seq, flags=FLAG_ACK)
                                 try:
                                     server_socket.sendto(ack_header, addr)
                                 except socket.error as e:
