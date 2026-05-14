@@ -40,6 +40,8 @@ python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 
 The expected behavior is that the client times out, retransmits the active Go-Back-N window, and completes the file transfer.
 
+The client prints a transfer summary after data delivery, including packet count, send attempts, retransmission events, window size, and duration.
+
 ## Network Experiments
 
 The Mininet topology can be used to test:

@@ -40,7 +40,7 @@ The goal of this project was to understand what TCP-like reliability actually re
 - Packet discard option for retransmission testing
 - Unique output filenames to avoid overwriting received files
 - Timestamped client and server logs
-- Throughput measurement after transfer
+- Client transfer summary and server throughput measurement
 
 ## Screenshots
 

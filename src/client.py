@@ -1,3 +1,4 @@
+import os
 import socket
 import sys
 import time
@@ -110,10 +111,15 @@ def client_start(ip, port, filename, window_size):
                 packet = header + data
                 packets.append(packet)
                 next_seq += 1
+            f.close()
 
             # Initialize sequence tracking for Go-Back-N
             next_seq = 1
             total_packets = len(packets)
+            total_bytes = os.path.getsize(filename)
+            packets_sent = 0
+            retransmission_events = 0
+            transfer_start = time.time()
             client_socket.settimeout(RETRANSMISSION_TIMEOUT)
 
             # Main Go-Back-N transmission loop
@@ -126,6 +132,7 @@ def client_start(ip, port, filename, window_size):
                     except socket.error as e:
                         print("[-] Socket error during sendto: {}".format(e))
                         sys.exit(1)
+                    packets_sent += 1
                     # Print information about the sliding window and packet
                     current_window = list(range(base, next_seq + 1))
                     timestamp = datetime.now().strftime("%H:%M:%S.%f")
@@ -136,6 +143,7 @@ def client_start(ip, port, filename, window_size):
                     ack_packet, _ = client_socket.recvfrom(1500)
                 except socket.timeout:
                     print("Timeout, resending window...")
+                    retransmission_events += 1
                     next_seq = base + sender_window
                     continue  # Retransmit the window after timeout
                 except socket.error as e:
@@ -146,6 +154,15 @@ def client_start(ip, port, filename, window_size):
                 if flags & FLAG_ACK:
                     print(f"ACK for packet = {ack} is received")
                     base = ack + 1  # Slide window base forward on valid ACK
+
+            transfer_duration = time.time() - transfer_start
+            print("\nTransfer Summary:")
+            print(f"File size: {total_bytes} bytes")
+            print(f"Total packets: {total_packets}")
+            print(f"Packet send attempts: {packets_sent}")
+            print(f"Retransmission events: {retransmission_events}")
+            print(f"Window size: {sender_window}")
+            print(f"Duration: {transfer_duration:.2f}s")
 
             # --- Connection teardown phase using FIN-ACK handshake ---
             fin_packet = pack_header(flags=FLAG_FIN)
