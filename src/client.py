@@ -18,6 +18,46 @@ from protocol import (
     unpack_header,
 )
 
+
+def prepare_packets(filename):
+    """Build DRTP data packets from a local file."""
+    packets = []
+    filename_bytes = filename.encode()
+    filename_len = len(filename_bytes)
+    if filename_len > MAX_FILENAME_SIZE:
+        raise ValueError("Filename too long")
+
+    with open(filename, "rb") as file:
+        data = file.read(PAYLOAD_SIZE - (1 + filename_len))
+        first_packet = (
+            pack_header(seq=1)
+            + bytes([filename_len])
+            + filename_bytes
+            + data
+        )
+        packets.append(first_packet)
+
+        next_seq = 2
+        while True:
+            data = file.read(PAYLOAD_SIZE)
+            if not data:
+                break
+            packets.append(pack_header(seq=next_seq) + data)
+            next_seq += 1
+
+    return packets
+
+
+def print_transfer_summary(total_bytes, total_packets, packets_sent, retransmission_events, window_size, duration):
+    print("\nTransfer Summary:")
+    print(f"File size: {total_bytes} bytes")
+    print(f"Total packets: {total_packets}")
+    print(f"Packet send attempts: {packets_sent}")
+    print(f"Retransmission events: {retransmission_events}")
+    print(f"Window size: {window_size}")
+    print(f"Duration: {duration:.2f}s")
+
+
 def client_start(ip, port, filename, window_size, verbose=False):
     """Send a file reliably over UDP using DRTP and Go-Back-N."""
 
@@ -65,14 +105,16 @@ def client_start(ip, port, filename, window_size, verbose=False):
 
             print("\nData Transfer:\n")
 
-            # --- Attempt to open file for reading in binary mode ---
             try:
-                f = open(filename, 'rb')
+                packets = prepare_packets(filename)
             except FileNotFoundError:
                 print("[-] File {} not found.".format(filename))
                 sys.exit(1)
             except PermissionError:
                 print("[-] Permission denied while opening {}.".format(filename))
+                sys.exit(1)
+            except ValueError as e:
+                print("[-] {}".format(e))
                 sys.exit(1)
             except Exception as e:
                 print("[-] Unexpected error while opening {}: {}".format(filename, e))
@@ -84,34 +126,6 @@ def client_start(ip, port, filename, window_size, verbose=False):
             sender_window = min(client_window, server_window) # Effective window
             base = 1                   # Base of the sliding window (oldest unacknowledged packet)
             next_seq = 1               # Next sequence number to send
-            packets = []               # List to store prepared data packets
-
-            # Prepare the first packet (filename transfer packet)
-            filename_bytes = filename.encode()
-            filename_len = len(filename_bytes)
-            if filename_len > MAX_FILENAME_SIZE:
-                print("[-] Filename too long!")
-                sys.exit(1)
-
-            # Read data for the first packet, leaving space for filename info
-            data = f.read(PAYLOAD_SIZE - (1 + filename_len))
-            header = pack_header(seq=1)
-            # First packet format: [header][filename length][filename][data]
-            first_packet = header + bytes([filename_len]) + filename_bytes + data
-            packets.append(first_packet)
-            
-            # Prepare and append the rest of the data packets to the list
-            next_seq = 2
-            while True:
-                # Read up to 992 bytes for each packet (to fit UDP payload)
-                data = f.read(PAYLOAD_SIZE)
-                if not data:
-                    break  # End of file
-                header = pack_header(seq=next_seq)
-                packet = header + data
-                packets.append(packet)
-                next_seq += 1
-            f.close()
 
             # Initialize sequence tracking for Go-Back-N
             next_seq = 1
@@ -157,13 +171,14 @@ def client_start(ip, port, filename, window_size, verbose=False):
                     base = ack + 1  # Slide window base forward on valid ACK
 
             transfer_duration = time.time() - transfer_start
-            print("\nTransfer Summary:")
-            print(f"File size: {total_bytes} bytes")
-            print(f"Total packets: {total_packets}")
-            print(f"Packet send attempts: {packets_sent}")
-            print(f"Retransmission events: {retransmission_events}")
-            print(f"Window size: {sender_window}")
-            print(f"Duration: {transfer_duration:.2f}s")
+            print_transfer_summary(
+                total_bytes,
+                total_packets,
+                packets_sent,
+                retransmission_events,
+                sender_window,
+                transfer_duration,
+            )
 
             # --- Connection teardown phase using FIN-ACK handshake ---
             fin_packet = pack_header(flags=FLAG_FIN)

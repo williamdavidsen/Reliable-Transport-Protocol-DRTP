@@ -20,6 +20,7 @@ Related docs:
 
 - [Architecture notes](docs/architecture.md)
 - [Testing notes](docs/testing.md)
+- [Release notes](docs/releases/v1.0.1.md)
 
 ## Overview
 
@@ -69,6 +70,8 @@ flowchart LR
 |-- README.md
 |-- docs/
 |   |-- architecture.md
+|   |-- releases/
+|   |   `-- v1.0.1.md
 |   |-- testing.md
 |   `-- screenshots/
 |       |-- architecture-flow.png
@@ -141,6 +144,22 @@ python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
 ```
 
 Add `--verbose` to either mode when you want packet-level logs.
+
+### Mininet Demo
+
+Run the topology from the `src/` directory:
+
+```bash
+sudo python3 simple-topo.py
+```
+
+Inside the Mininet CLI, open terminals for `h1` and `h2`:
+
+```bash
+xterm h1 h2
+```
+
+Use `h2` as the server and `h1` as the client.
 
 ### Start the Client
 
