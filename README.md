@@ -6,6 +6,8 @@ A Python implementation of a reliable file transfer protocol built on top of UDP
 
 I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
 
+<img src="docs/screenshots/drtp-demo.gif" alt="DRTP quick demo" width="100%">
+
 ## Technical Highlights
 
 - Built reliable file transfer over UDP without using TCP reliability.
@@ -80,6 +82,7 @@ flowchart LR
 |   `-- screenshots/
 |       |-- architecture-flow.png
 |       |-- client-transfer.png
+|       |-- drtp-demo.gif
 |       |-- retransmission-test.png
 |       `-- server-transfer.png
 `-- src/
