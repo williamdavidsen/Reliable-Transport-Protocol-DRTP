@@ -26,6 +26,8 @@ def main():
                         help="Packet to discard (for server test/debugging reliability)")
     parser.add_argument("-o", "--output", type=str,
                         help="Optional output filename for received files in server mode")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Print detailed packet-level logs")
 
     args = parser.parse_args()
 
@@ -40,12 +42,12 @@ def main():
         sys.exit(1)
 
     if args.server:
-        server_start(args.ip, args.port, args.discard, args.output)
+        server_start(args.ip, args.port, args.discard, args.output, args.verbose)
     elif args.client:
         if not args.file:
             print("[-] You must specify a file using -f flag in client mode.")
             sys.exit(1)
-        client_start(args.ip, args.port, args.file, args.window)
+        client_start(args.ip, args.port, args.file, args.window, args.verbose)
 
 if __name__ == "__main__":
     main()

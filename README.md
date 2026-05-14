@@ -1,10 +1,12 @@
 # DRTP - Reliable Transport Protocol over UDP
 
-[![Python checks](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml/badge.svg)](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml)
+[![Python checks](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP/actions/workflows/python.yml/badge.svg)](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP/actions/workflows/python.yml)
 
 A Python implementation of a reliable file transfer protocol built on top of UDP.
 
 I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
+
+<img src="docs/screenshots/drtp-demo.gif" alt="DRTP quick demo" width="100%">
 
 ## Technical Highlights
 
@@ -80,6 +82,7 @@ flowchart LR
 |   `-- screenshots/
 |       |-- architecture-flow.png
 |       |-- client-transfer.png
+|       |-- drtp-demo.gif
 |       |-- retransmission-test.png
 |       `-- server-transfer.png
 `-- src/
@@ -98,7 +101,8 @@ flowchart LR
 ## Requirements
 
 - Python 3
-- Standard Python library only
+- No external runtime dependencies
+- Tests also use the Python standard library only
 - Linux or Mininet environment for the full network simulation
 
 The application can also be tested locally with loopback addresses, but the intended evaluation environment is Mininet.
@@ -112,13 +116,13 @@ Run the commands from the `src/` directory.
 Terminal 1:
 
 ```bash
-python3 application.py -s -i 127.0.0.1 -p 8088
+python3 application.py -s -i 127.0.0.1 -p 8088 --verbose
 ```
 
 Terminal 2:
 
 ```bash
-python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5
+python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5 --verbose
 ```
 
 ### Start the Server
@@ -145,6 +149,8 @@ To choose the output filename:
 python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
 ```
 
+Add `--verbose` to either mode when you want packet-level logs.
+
 ### Start the Client
 
 ```bash
@@ -169,6 +175,7 @@ python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 | `-w`, `--window` | Client | Sliding window size |
 | `-d`, `--discard` | Server | Drops a selected packet once for testing |
 | `-o`, `--output` | Server | Optional filename for the received file |
+| `-v`, `--verbose` | Both | Prints packet-level logs |
 
 ## Protocol Overview
 

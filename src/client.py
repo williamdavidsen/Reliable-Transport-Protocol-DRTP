@@ -18,7 +18,7 @@ from protocol import (
     unpack_header,
 )
 
-def client_start(ip, port, filename, window_size):
+def client_start(ip, port, filename, window_size, verbose=False):
     """Send a file reliably over UDP using DRTP and Go-Back-N."""
 
     try:
@@ -133,9 +133,10 @@ def client_start(ip, port, filename, window_size):
                         sys.exit(1)
                     packets_sent += 1
                     # Print information about the sliding window and packet
-                    current_window = list(range(base, next_seq + 1))
-                    timestamp = datetime.now().strftime("%H:%M:%S.%f")
-                    print(f"{timestamp} -- packet with seq = {next_seq} is sent, sliding window = {current_window}")
+                    if verbose:
+                        current_window = list(range(base, next_seq + 1))
+                        timestamp = datetime.now().strftime("%H:%M:%S.%f")
+                        print(f"{timestamp} -- packet with seq = {next_seq} is sent, sliding window = {current_window}")
                     next_seq += 1
                 try:
                     # Wait for ACK from server
@@ -151,7 +152,8 @@ def client_start(ip, port, filename, window_size):
                 # Unpack ACK packet header
                 seq, ack, flags, win = unpack_header(ack_packet)
                 if flags & FLAG_ACK:
-                    print(f"ACK for packet = {ack} is received")
+                    if verbose:
+                        print(f"ACK for packet = {ack} is received")
                     base = ack + 1  # Slide window base forward on valid ACK
 
             transfer_duration = time.time() - transfer_start
