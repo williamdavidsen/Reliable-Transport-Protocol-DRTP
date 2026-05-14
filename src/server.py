@@ -74,6 +74,7 @@ def server_start(ip, port, discard_seq, output_filename=None):
                 saved_filename = None
                 total_bytes_received = 0
                 start_time = time.time()  # Record transfer start time
+                last_activity = start_time
 
                 while True:
                     try:
@@ -82,13 +83,16 @@ def server_start(ip, port, discard_seq, output_filename=None):
                             # Wait for next data packet from client
                             packet, addr = server_socket.recvfrom(1500)
                         except socket.timeout:
-                            print("Timeout while receiving data.")
-                            break  # End of data transfer on timeout
+                            if time.time() - last_activity > SERVER_IDLE_TIMEOUT:
+                                print("Timeout while receiving data.")
+                                break
+                            continue
                         except socket.error as e:
                             print("[-] Socket error during recvfrom: {}".format(e))
                             break
                         if not packet:
                             break  # End of file or stream
+                        last_activity = time.time()
 
                         seq, ack, flags, win = unpack_header(packet)
                         data = packet[HEADER_SIZE:]
@@ -155,9 +159,14 @@ def server_start(ip, port, discard_seq, output_filename=None):
                                 print(f"{timestamp} -- sending ack for the received {seq}")
                                 expected_seq += 1
                             else:
-                                # If an out-of-order packet is received, log and ignore
                                 print(f"{datetime.now().strftime('%H:%M:%S.%f')} -- out-of-order packet {seq} is received")
-                                continue
+                        else:
+                            ack_header = pack_header(ack=expected_seq - 1, flags=FLAG_ACK)
+                            try:
+                                server_socket.sendto(ack_header, addr)
+                            except socket.error as e:
+                                print("[-] Socket error during sendto: {}".format(e))
+                                break
 
                     except Exception as e:
                         print("[-] Unexpected error during data transfer: {}".format(e))
