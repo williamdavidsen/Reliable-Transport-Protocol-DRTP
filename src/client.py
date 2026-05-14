@@ -124,7 +124,6 @@ def client_start(ip, port, filename, window_size):
 
             # Main Go-Back-N transmission loop
             while base <= total_packets:
-                next_seq = base
                 # Send all packets in the current window
                 while next_seq < base + sender_window and next_seq <= total_packets:
                     try:
@@ -144,7 +143,7 @@ def client_start(ip, port, filename, window_size):
                 except socket.timeout:
                     print("Timeout, resending window...")
                     retransmission_events += 1
-                    next_seq = base + sender_window
+                    next_seq = base
                     continue  # Retransmit the window after timeout
                 except socket.error as e:
                     print("[-] Socket error during recvfrom: {}".format(e))

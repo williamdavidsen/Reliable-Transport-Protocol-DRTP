@@ -72,6 +72,7 @@ def server_start(ip, port, discard_seq, output_filename=None):
 
                 expected_seq = 1     # Next expected sequence number from client
                 f = None             # File object for writing received data
+                saved_filename = None
                 total_bytes_received = 0
                 start_time = time.time()  # Record transfer start time
 
@@ -129,6 +130,7 @@ def server_start(ip, port, discard_seq, output_filename=None):
                                 except Exception as e:
                                     print("[-] Error while creating file: {}".format(e))
                                     break
+                                saved_filename = new_filename
                             else:
                                 # For all packets except the first, data is the payload after header
                                 data = packet[HEADER_SIZE:]
@@ -173,7 +175,7 @@ def server_start(ip, port, discard_seq, output_filename=None):
                 throughput_mbps = (total_bytes_received * 8) / (
                     elapsed * 1_000_000
                 )
-                print(f"File saved as {filename}")
+                print(f"File saved as {saved_filename}")
                 print(f"The throughput is {throughput_mbps:.2f} Mbps")
                 print("Connection Closes")
                 f = None
