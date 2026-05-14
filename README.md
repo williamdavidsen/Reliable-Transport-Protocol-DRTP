@@ -12,6 +12,11 @@ I built this project to explore how reliable data transfer can be implemented wi
 - Tested retransmission behavior with intentional packet drops.
 - Measured throughput under different RTT, packet loss, and window-size conditions.
 
+More detail:
+
+- [Architecture notes](docs/architecture.md)
+- [Testing notes](docs/testing.md)
+
 ## Purpose
 
 The goal of this project was to understand what TCP-like reliability actually requires under the hood. Instead of depending on TCP, I built the reliability mechanisms myself over UDP and tested how the protocol behaves under delay, packet loss, different window sizes, and forced retransmission scenarios.
@@ -63,6 +68,8 @@ flowchart LR
 .
 |-- README.md
 |-- docs/
+|   |-- architecture.md
+|   |-- testing.md
 |   `-- screenshots/
 |       |-- client-transfer.png
 |       `-- server-transfer.png
