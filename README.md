@@ -1,6 +1,6 @@
 # DRTP - Reliable Transport Protocol over UDP
 
-[![Python checks](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml/badge.svg)](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml)
+[![Python checks](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP/actions/workflows/python.yml/badge.svg)](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP/actions/workflows/python.yml)
 
 A Python implementation of a reliable file transfer protocol built on top of UDP.
 
