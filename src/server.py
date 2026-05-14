@@ -12,7 +12,6 @@ from protocol import (
     HEADER_SIZE,
     RETRANSMISSION_TIMEOUT,
     SERVER_IDLE_TIMEOUT,
-    has_flags,
     pack_header,
     unpack_header,
 )

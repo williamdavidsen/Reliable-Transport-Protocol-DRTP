@@ -70,6 +70,9 @@ flowchart LR
 
 ```text
 .
+|-- .github/
+|   `-- workflows/
+|       `-- python.yml
 |-- README.md
 |-- docs/
 |   |-- architecture.md
@@ -83,9 +86,13 @@ flowchart LR
     |-- application.py
     |-- client.py
     |-- filename_utils.py
+    |-- protocol.py
     |-- server.py
     |-- simple-topo.py
     `-- iceland-safiqul.jpg
+`-- tests/
+    |-- test_filename_utils.py
+    `-- test_protocol.py
 ```
 
 ## Requirements

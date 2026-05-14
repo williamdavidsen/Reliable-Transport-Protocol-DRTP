@@ -11,6 +11,7 @@ DRTP is a client-server file transfer application built on top of UDP. The proje
 | `application.py` | Parses command-line arguments and starts client or server mode. |
 | `client.py` | Sends files, manages the sliding window, waits for ACKs, and retransmits on timeout. |
 | `server.py` | Receives packets in order, writes the output file, sends ACKs, and reports throughput. |
+| `protocol.py` | Defines packet constants and header packing/unpacking helpers. |
 | `filename_utils.py` | Creates unique filenames so received files are not overwritten. |
 | `simple-topo.py` | Defines a Mininet topology for delay and packet-loss experiments. |
 
