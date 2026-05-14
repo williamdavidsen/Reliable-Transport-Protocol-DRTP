@@ -1,213 +1,126 @@
 # DATA2410 Reliable Transport Protocol (DRTP)
 
-## About This Project
+A Python implementation of a reliable file transfer protocol built on top of UDP.
 
-This project was written for the DATA2410 course to implement a reliable file transfer application over UDP.
-A custom protocol, named DATA2410 Reliable Transport Protocol (DRTP) , was designed and coded to ensure reliable, ordered file transfer between two nodes (client and server) in Python.
+This project was developed for the DATA2410 course to explore how reliability can be implemented without using TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
 
-TCP was not used for reliability. Instead, all reliability, connection management, and teardown mechanisms were implemented from scratch over UDP.
-Therefore:
+## Purpose
 
-* Connections are established and closed with custom handshakes.
-* Data is delivered reliably, in the correct order, and without duplication.
-* Retransmissions, windowing, and all network errors are handled by the application code.
+The goal of this project was to understand what TCP-like reliability actually requires under the hood. Instead of depending on TCP, I built the reliability mechanisms myself over UDP and tested how the protocol behaves under delay, packet loss, different window sizes, and forced retransmission scenarios.
 
----
+## What I Learned
+
+- How reliable transport can be built on top of an unreliable protocol like UDP.
+- How three-way handshakes, acknowledgements, and teardown logic work in practice.
+- How Go-Back-N and sliding windows affect throughput.
+- How packet loss, RTT, and retransmission timeouts influence performance.
+- How to validate file integrity with checksum comparison after transfer.
+- How to test network behavior using Mininet and `tc netem`.
+
+## Features
+
+- Reliable file transfer over UDP
+- Custom DRTP packet header
+- Three-way connection establishment: `SYN`, `SYN-ACK`, `ACK`
+- Go-Back-N retransmission strategy
+- Configurable sliding window size
+- Packet discard option for retransmission testing
+- Unique output filenames to avoid overwriting received files
+- Timestamped client and server logs
+- Throughput measurement after transfer
+
+## Screenshots
+
+| Client Transfer | Server Receiver |
+| --- | --- |
+| <img src="docs/screenshots/client-transfer.png" alt="DRTP client transfer demo" width="100%"> | <img src="docs/screenshots/server-transfer.png" alt="DRTP server receiver demo" width="100%"> |
 
 ## Project Structure
 
-The following structure was used in this project:
-
-
-src/
-  application.py    # The main function is located in application.py.
-  client.py
-  server.py
-  filename_utils.py
-  simple-topo.py  
-my_inspera_id_documentation.pdf
-|
-README.md
-  
-
-* All implementation files are placed inside src/.
-* This README and the project documentation PDF are located in the root folder.
-
----
+```text
+.
+|-- README.md
+|-- docs/
+|   `-- screenshots/
+|       |-- client-transfer.png
+|       `-- server-transfer.png
+`-- src/
+    |-- application.py
+    |-- client.py
+    |-- filename_utils.py
+    |-- server.py
+    |-- simple-topo.py
+    `-- iceland-safiqul.jpg
+```
 
 ## Requirements
 
-* Python 3.13.3 used.
-* Only the standard Python library was chosen (no external dependencies).
-* The application was written for Linux (Mininet or similar), but can be run on any OS supporting UDP and Python.
+- Python 3
+- Standard Python library only
+- Linux or Mininet environment for the full network simulation
 
----
+The application can also be tested locally with loopback addresses, but the intended evaluation environment is Mininet.
 
-## How to Use
+## Usage
 
-* All commands must be executed inside the src/ directory.
+Run the commands from the `src/` directory.
 
-### 1. Running the Server (Receiver)
+### Start the Server
 
-First, the server must be started on the receiver node (e.g., Mininet host h2):
+```bash
+python3 application.py -s -i <server_ip> -p <port>
+```
 
+Example:
 
-python3 application.py -s -i <server_ip> -p <port> [-d <seq_to_discard>]
-
-
-Arguments:
-
-* -s / --server: Activates server mode.
-* -i / --ip : IP address to bind (default: 10.0.1.2).
-* -p / --port : UDP port to listen on (default: 8088).
-* -d / --discard : (Optional) Sequence number of the packet to discard for testing 
-
-* Example:
-
-
+```bash
 python3 application.py -s -i 10.0.1.2 -p 8088
+```
 
+To intentionally drop one packet for retransmission testing:
 
-### 2. Running the Client (Sender)
+```bash
+python3 application.py -s -i 10.0.1.2 -p 8088 -d 5
+```
 
-The client is started from the sender node (e.g., Mininet host h1 ):
+### Start the Client
 
-
+```bash
 python3 application.py -c -f <file> -i <server_ip> -p <port> -w <window_size>
+```
 
+Example:
 
-Arguments:
-
-* -c / --client : Activates client mode.
-* -f / --file : File to be sent (e.g., Photo.jpg).
-* -i / --ip : IP address of the server.
-* -p / --port : UDP port (must match server).
-* -w / --window : (Optional) Sliding window size for Go-Back-N (used 3,5,10,15,20,25).
-
-* Example:
-
-
+```bash
 python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
+```
 
+## Command-Line Options
 
+| Option | Mode | Description |
+| --- | --- | --- |
+| `-s`, `--server` | Server | Starts the receiver |
+| `-c`, `--client` | Client | Starts the sender |
+| `-i`, `--ip` | Both | Server IP address |
+| `-p`, `--port` | Both | UDP port |
+| `-f`, `--file` | Client | File to transfer |
+| `-w`, `--window` | Client | Sliding window size |
+| `-d`, `--discard` | Server | Drops a selected packet once for testing |
 
+## Protocol Overview
 
-## Protocol Description
+Each DRTP packet uses an 8-byte custom header followed by up to 992 bytes of data. The header contains sequence number, acknowledgement number, flags, and receiver window information.
 
-* Chunk Size: Files are split into 992-byte chunks. Each packet is 1000 bytes (8-byte header + 992 bytes data).
+The client first establishes a connection with a three-way handshake. During transfer, the sender uses Go-Back-N with a configurable sliding window. If an acknowledgement is not received before the timeout, the sender retransmits the unacknowledged window. The server accepts packets in order and acknowledges the latest correctly received sequence number.
 
-* Custom Header: Each DRTP packet header contains a sequence number, acknowledgment number, flags (SYN, ACK, FIN), and receiver window size.
+## Testing
 
-* Connection Setup: A three-way handshake (SYN, SYN-ACK, ACK) is used.
+The project was tested with:
 
-* Connection Teardown: A two-way handshake (FIN, FIN-ACK) is used.
+- Different window sizes: `3`, `5`, `10`, `15`, `20`, `25`
+- RTT values such as `50 ms`, `100 ms`, and `200 ms`
+- Intentional packet drops using the `-d` flag
+- Random packet loss using `tc netem`
+- MD5 checksum comparison between the original and received files
 
-* Reliability: Go-Back-N protocol was implemented for retransmission and sliding window. Default timeout is 400 ms.
-
-* Testing Retransmission: The -d flag can be used on the server to drop a specific packet and force client retransmission.
-
-* Unique Filenames: Incoming files are saved with a unique name using filename_utils.py . Existing files are never overwritten.
-
-* Logging: Timestamped console output is produced for all major protocol events (sending, receiving, acks, etc.).
-
----
-
-## Sample Output
-
-* Server Output (h2):
-
-
-
-SYN packet is received
-SYN-ACK packet is sent
-ACK packet is received
-Connection established
-21:20:58.675875 -- packet 1 is received
-21:20:58.675940 -- sending ack for the received 1
-...
-Timeout while receiving data.
-File saved as file.jpg
-The throughput is 0.97 Mbps
-Connection Closes
-No SYN packet received, timing out and shutting down server.
-  
-
-* Client Output (h1):
-
-Connection Establishment Phase:
-
-SYN packet is sent
-SYN-ACK packet is received
-ACK packet is sent
-Connection established
-
-Data Transfer:
-
-20:07:21.630782 -- packet with seq = 1 is sent, sliding window = [1]
-ACK for packet = 1 is received
-...
-[-] FIN-ACK not received, retrying...
-FIN packet is sent
-[-] FIN-ACK not received, retrying...
-[-] FIN-ACK not received after retries, closing anyway.
-Connection Closes
-  
-
----
-
-## Tips, Troubleshooting, and Testing
-
-* The server should always be started on h2 and the client on h1 in Mininet in Linux.
-* If the server is not running, the client will timeout after sending the SYN packet.
-* The -d flag is for retransmission tests; the client must retransmit any dropped packet.
-* The -w flag allows window size changes to test throughput.
-* Mininet or tc-netem may be used for advanced network simulation.
-
-* Timeouts:
-A 400 ms retransmission timeout was set.
-
-* Defaults:
-If no IP, port, or window size is specified, default values are used.
-
-* Filenames:
-The client always sends the file name at the beginning of the transfer.
-The server saves incoming files with a received_ prefix, and creates a unique filename if needed.
-
----
-
-## Testing & Evaluation
-
-The following tests are recommended to demonstrate protocol reliability and performance:
-
-1. Throughput vs. Window Size:
-
-  * Test with window sizes of 3, 5, 10, 15, 20, 25 using the -w flag.
-  * Measure throughput on both client and server.
-
-2. Varying RTT (Network Delay):
-
-  * Change RTT to 50 ms and 200 ms in simple-topo.py (The following line in simple-topo.py was changed: net["r"].cmd("tc qdisc add dev r-eth1 root netem delay 100ms")).
-
-  * Repeat throughput tests for each RTT.
-
-3. Packet Loss and Retransmission Test (-d flag):
-
-  * Start the server with -d <seq_num> to drop a specific packet once.
-  * Confirm that the client retransmits, and the protocol recovers.
-
-4. Simulated Packet Loss (tc-netem):
-
-  * Enable packet loss (e.g., loss 2% , loss 5% , loss 50% ).
-  * Check that the file transfer completes and throughput is measured under loss.
-
-5. FIN-ACK Loss Scenario:
-
-  * After file transfer, simulate loss of the FIN-ACK (e.g., by disconnecting or dropping the packet).
-  * Observe the client’s retransmission and protocol behavior.
-
-Note: After all transmissions between the client and the server, the original and the received jpg files were verified to be identical using the md5sum command.
-
-
-
-
-
+The detailed experiment results were documented separately during the course submission.
