@@ -5,11 +5,6 @@ import argparse
 import socket
 import sys
 
-# Protocol flags shared by the client and server.
-FLAG_FIN = 1 << 0
-FLAG_ACK = 1 << 1
-FLAG_SYN = 1 << 2
-
 def main():
     """Parse CLI arguments and start DRTP in client or server mode."""
 
@@ -29,6 +24,8 @@ def main():
                         help="Sliding window size (default: 3)")
     parser.add_argument("-d", "--discard", type=int, default=999999,
                         help="Packet to discard (for server test/debugging reliability)")
+    parser.add_argument("-o", "--output", type=str,
+                        help="Optional output filename for received files in server mode")
 
     args = parser.parse_args()
 
@@ -43,7 +40,7 @@ def main():
         sys.exit(1)
 
     if args.server:
-        server_start(args.ip, args.port, args.discard)
+        server_start(args.ip, args.port, args.discard, args.output)
     elif args.client:
         if not args.file:
             print("[-] You must specify a file using -f flag in client mode.")

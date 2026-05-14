@@ -1,13 +1,22 @@
+import os
 import socket
-import struct
 import sys
+import time
 from datetime import datetime
 
-# Protocol flags shared by the client and server.
-FLAG_FIN = 1 << 0
-FLAG_ACK = 1 << 1
-FLAG_SYN = 1 << 2
-FLAG_RST = 1 << 3
+from protocol import (
+    FLAG_ACK,
+    FLAG_FIN,
+    FLAG_SYN,
+    HANDSHAKE_TIMEOUT,
+    HEADER_SIZE,
+    MAX_FILENAME_SIZE,
+    PAYLOAD_SIZE,
+    RETRANSMISSION_TIMEOUT,
+    has_flags,
+    pack_header,
+    unpack_header,
+)
 
 def client_start(ip, port, filename, window_size):
     """Send a file reliably over UDP using DRTP and Go-Back-N."""
@@ -23,8 +32,7 @@ def client_start(ip, port, filename, window_size):
 
     # Three-way handshake: SYN, SYN-ACK, ACK.
     try:
-        syn_flags = FLAG_SYN
-        syn_packet = struct.pack('!HHHH', 0, 0, syn_flags, 0)
+        syn_packet = pack_header(flags=FLAG_SYN)
         try:
             client_socket.sendto(syn_packet, server_addr)
         except socket.error as e:
@@ -32,7 +40,7 @@ def client_start(ip, port, filename, window_size):
             sys.exit(1)
         print("SYN packet is sent")
 
-        client_socket.settimeout(2)
+        client_socket.settimeout(HANDSHAKE_TIMEOUT)
         try:
             # Wait for SYN-ACK response from server
             data, addr = client_socket.recvfrom(1024)
@@ -42,13 +50,11 @@ def client_start(ip, port, filename, window_size):
         except socket.error as e:
             print("[-] Socket error during recvfrom: {}".format(e))
             sys.exit(1)
-        seq, ack, flags, win = struct.unpack('!HHHH', data[:8])
+        seq, ack, flags, win = unpack_header(data)
 
-        if (flags & FLAG_SYN) and (flags & FLAG_ACK):
+        if has_flags(flags, FLAG_SYN | FLAG_ACK):
             print("SYN-ACK packet is received")
-            ack_flags = FLAG_ACK
-            # Send final ACK to complete handshake
-            ack_packet = struct.pack('!HHHH', 0, seq + 1, ack_flags, win)
+            ack_packet = pack_header(ack=seq + 1, flags=FLAG_ACK, window=win)
             try:
                 client_socket.sendto(ack_packet, server_addr)
             except socket.error as e:
@@ -73,7 +79,6 @@ def client_start(ip, port, filename, window_size):
                 sys.exit(1)
 
             # Initialize sequence variables for Go-Back-N sliding window protocol
-            sequence_number = 1        # Sequence number for packets (starts at 1)
             client_window = window_size # Client window size (from CLI)
             server_window = win         # Server window size (received from SYN-ACK)
             sender_window = min(client_window, server_window) # Effective window
@@ -84,13 +89,13 @@ def client_start(ip, port, filename, window_size):
             # Prepare the first packet (filename transfer packet)
             filename_bytes = filename.encode()
             filename_len = len(filename_bytes)
-            if filename_len > 255:
+            if filename_len > MAX_FILENAME_SIZE:
                 print("[-] Filename too long!")
                 sys.exit(1)
 
             # Read data for the first packet, leaving space for filename info
-            data = f.read(992 - (1 + filename_len))
-            header = struct.pack('!HHHH', 1, 0, 0, 0)
+            data = f.read(PAYLOAD_SIZE - (1 + filename_len))
+            header = pack_header(seq=1)
             # First packet format: [header][filename length][filename][data]
             first_packet = header + bytes([filename_len]) + filename_bytes + data
             packets.append(first_packet)
@@ -99,22 +104,26 @@ def client_start(ip, port, filename, window_size):
             next_seq = 2
             while True:
                 # Read up to 992 bytes for each packet (to fit UDP payload)
-                data = f.read(992)
+                data = f.read(PAYLOAD_SIZE)
                 if not data:
                     break  # End of file
-                header = struct.pack('!HHHH', next_seq, 0, 0, 0)
+                header = pack_header(seq=next_seq)
                 packet = header + data
                 packets.append(packet)
                 next_seq += 1
+            f.close()
 
             # Initialize sequence tracking for Go-Back-N
             next_seq = 1
             total_packets = len(packets)
-            client_socket.settimeout(0.4)  # Short timeout for retransmissions
+            total_bytes = os.path.getsize(filename)
+            packets_sent = 0
+            retransmission_events = 0
+            transfer_start = time.time()
+            client_socket.settimeout(RETRANSMISSION_TIMEOUT)
 
             # Main Go-Back-N transmission loop
             while base <= total_packets:
-                next_seq = base
                 # Send all packets in the current window
                 while next_seq < base + sender_window and next_seq <= total_packets:
                     try:
@@ -122,6 +131,7 @@ def client_start(ip, port, filename, window_size):
                     except socket.error as e:
                         print("[-] Socket error during sendto: {}".format(e))
                         sys.exit(1)
+                    packets_sent += 1
                     # Print information about the sliding window and packet
                     current_window = list(range(base, next_seq + 1))
                     timestamp = datetime.now().strftime("%H:%M:%S.%f")
@@ -132,21 +142,29 @@ def client_start(ip, port, filename, window_size):
                     ack_packet, _ = client_socket.recvfrom(1500)
                 except socket.timeout:
                     print("Timeout, resending window...")
-                    next_seq = base + sender_window
+                    retransmission_events += 1
+                    next_seq = base
                     continue  # Retransmit the window after timeout
                 except socket.error as e:
                     print("[-] Socket error during recvfrom: {}".format(e))
                     sys.exit(1)
                 # Unpack ACK packet header
-                ack_header = ack_packet[:8]
-                seq, ack, flags, win = struct.unpack('!HHHH', ack_header)
+                seq, ack, flags, win = unpack_header(ack_packet)
                 if flags & FLAG_ACK:
                     print(f"ACK for packet = {ack} is received")
                     base = ack + 1  # Slide window base forward on valid ACK
 
+            transfer_duration = time.time() - transfer_start
+            print("\nTransfer Summary:")
+            print(f"File size: {total_bytes} bytes")
+            print(f"Total packets: {total_packets}")
+            print(f"Packet send attempts: {packets_sent}")
+            print(f"Retransmission events: {retransmission_events}")
+            print(f"Window size: {sender_window}")
+            print(f"Duration: {transfer_duration:.2f}s")
+
             # --- Connection teardown phase using FIN-ACK handshake ---
-            fin_flags = FLAG_FIN
-            fin_packet = struct.pack('!HHHH', 0, 0, fin_flags, 0)
+            fin_packet = pack_header(flags=FLAG_FIN)
             retries = 5
             fin_ack_received = False
 
@@ -161,8 +179,8 @@ def client_start(ip, port, filename, window_size):
                 try:
                     # Wait for FIN-ACK from server
                     fin_ack_packet, _ = client_socket.recvfrom(1024)
-                    seq, ack, flags, win = struct.unpack('!HHHH', fin_ack_packet[:8])
-                    if (flags & FLAG_FIN) and (flags & FLAG_ACK):
+                    seq, ack, flags, win = unpack_header(fin_ack_packet)
+                    if has_flags(flags, FLAG_FIN | FLAG_ACK):
                         print("FIN ACK packet is received")
                         print("Connection Closes")
                         fin_ack_received = True

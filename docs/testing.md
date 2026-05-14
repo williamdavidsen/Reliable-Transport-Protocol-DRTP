@@ -26,6 +26,12 @@ The server can intentionally drop one packet to verify retransmission behavior:
 python3 application.py -s -i 10.0.1.2 -p 8088 -d 5
 ```
 
+The server can also write to a selected output filename:
+
+```bash
+python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
+```
+
 Then run the client:
 
 ```bash
@@ -33,6 +39,8 @@ python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 ```
 
 The expected behavior is that the client times out, retransmits the active Go-Back-N window, and completes the file transfer.
+
+The client prints a transfer summary after data delivery, including packet count, send attempts, retransmission events, window size, and duration.
 
 ## Network Experiments
 

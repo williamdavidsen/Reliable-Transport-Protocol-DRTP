@@ -1,5 +1,7 @@
 # DRTP - Reliable Transport Protocol over UDP
 
+[![Python checks](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml/badge.svg)](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml)
+
 A Python implementation of a reliable file transfer protocol built on top of UDP.
 
 I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
@@ -40,7 +42,7 @@ The goal of this project was to understand what TCP-like reliability actually re
 - Packet discard option for retransmission testing
 - Unique output filenames to avoid overwriting received files
 - Timestamped client and server logs
-- Throughput measurement after transfer
+- Client transfer summary and server throughput measurement
 
 ## Screenshots
 
@@ -68,6 +70,9 @@ flowchart LR
 
 ```text
 .
+|-- .github/
+|   `-- workflows/
+|       `-- python.yml
 |-- README.md
 |-- docs/
 |   |-- architecture.md
@@ -81,9 +86,13 @@ flowchart LR
     |-- application.py
     |-- client.py
     |-- filename_utils.py
+    |-- protocol.py
     |-- server.py
     |-- simple-topo.py
     `-- iceland-safiqul.jpg
+`-- tests/
+    |-- test_filename_utils.py
+    `-- test_protocol.py
 ```
 
 ## Requirements
@@ -130,6 +139,12 @@ To intentionally drop one packet for retransmission testing:
 python3 application.py -s -i 10.0.1.2 -p 8088 -d 5
 ```
 
+To choose the output filename:
+
+```bash
+python3 application.py -s -i 10.0.1.2 -p 8088 -o received.jpg
+```
+
 ### Start the Client
 
 ```bash
@@ -153,6 +168,7 @@ python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 | `-f`, `--file` | Client | File to transfer |
 | `-w`, `--window` | Client | Sliding window size |
 | `-d`, `--discard` | Server | Drops a selected packet once for testing |
+| `-o`, `--output` | Server | Optional filename for the received file |
 
 ## Protocol Overview
 
@@ -163,6 +179,12 @@ The client first establishes a connection with a three-way handshake. During tra
 ## Testing
 
 <img src="docs/screenshots/retransmission-test.png" alt="DRTP retransmission test" width="100%">
+
+Run the automated tests:
+
+```bash
+python -m unittest discover -s tests
+```
 
 The project was tested with:
 
