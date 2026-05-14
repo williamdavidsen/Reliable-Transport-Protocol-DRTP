@@ -68,9 +68,9 @@ def server_start(ip, port, discard_seq):
 
                 expected_seq = 1     # Next expected sequence number from client
                 f = None             # File object for writing received data
+                total_bytes_received = 0
                 start_time = time.time()  # Record transfer start time
 
-                # --- Main Data Reception Loop ---
                 while True:
                     try:
                         server_socket.settimeout(0.4)  # Short timeout for retransmissions
@@ -89,6 +89,17 @@ def server_start(ip, port, discard_seq):
                         header = packet[:8]
                         seq, ack, flags, win = struct.unpack('!HHHH', header)
                         data = packet[8:]
+
+                        if flags & FLAG_FIN:
+                            print("FIN packet is received")
+                            fin_ack_flags = FLAG_ACK | FLAG_FIN
+                            fin_ack = struct.pack('!HHHH', 0, seq + 1, fin_ack_flags, 0)
+                            try:
+                                server_socket.sendto(fin_ack, addr)
+                            except socket.error as e:
+                                print("[-] Socket error during sendto: {}".format(e))
+                            print("FIN ACK packet is sent")
+                            break
 
                         # Discard packet with specified sequence for testing (once)
                         if discard_seq == seq and not discarded:
@@ -143,19 +154,6 @@ def server_start(ip, port, discard_seq):
                                 print(f"{datetime.now().strftime('%H:%M:%S.%f')} -- out-of-order packet {seq} is received")
                                 continue
 
-                            # If FIN flag is present, begin teardown handshake
-                            if flags & FLAG_FIN:
-                                print("FIN packet is received")
-                                fin_ack_flags = FLAG_ACK | FLAG_FIN
-                                fin_ack = struct.pack('!HHHH', 0, seq + 1, fin_ack_flags, 0)
-                                try:
-                                    server_socket.sendto(fin_ack, addr)
-                                except socket.error as e:
-                                    print("[-] Socket error during sendto: {}".format(e))
-                                print("FIN ACK packet is sent")
-                                print("Connection Closes")
-                                break
-
                     except Exception as e:
                         print("[-] Unexpected error during data transfer: {}".format(e))
                         break
@@ -174,6 +172,7 @@ def server_start(ip, port, discard_seq):
                 print(f"File saved as {filename}")
                 print(f"The throughput is {throughput_mbps:.2f} Mbps")
                 print("Connection Closes")
+                f = None
                 
     except KeyboardInterrupt:
         print("[-] Server shutting down...")
