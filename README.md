@@ -1,5 +1,7 @@
 # DRTP - Reliable Transport Protocol over UDP
 
+[![Python checks](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml/badge.svg)](https://github.com/williamdavidsen/Reliable-Transport-Protocol-DRTP-/actions/workflows/python.yml)
+
 A Python implementation of a reliable file transfer protocol built on top of UDP.
 
 I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
