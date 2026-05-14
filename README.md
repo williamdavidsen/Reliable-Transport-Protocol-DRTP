@@ -20,6 +20,7 @@ Related docs:
 
 - [Architecture notes](docs/architecture.md)
 - [Testing notes](docs/testing.md)
+- [Release notes](docs/releases/v1.0.1.md)
 
 ## Overview
 
@@ -69,6 +70,8 @@ flowchart LR
 |-- README.md
 |-- docs/
 |   |-- architecture.md
+|   |-- releases/
+|   |   `-- v1.0.1.md
 |   |-- testing.md
 |   `-- screenshots/
 |       |-- architecture-flow.png
