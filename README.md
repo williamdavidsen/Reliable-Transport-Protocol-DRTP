@@ -4,35 +4,26 @@
 
 A Python implementation of a reliable file transfer protocol built on top of UDP.
 
-I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
+DRTP implements connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown in the application layer.
 
 <img src="docs/screenshots/drtp-demo.gif" alt="DRTP quick demo" width="100%">
 
-## Technical Highlights
+## Highlights
 
-- Built reliable file transfer over UDP without using TCP reliability.
-- Implemented Go-Back-N with a configurable sliding window.
-- Added custom packet headers with sequence numbers, acknowledgements, flags, and window size.
-- Tested retransmission behavior with intentional packet drops.
-- Measured throughput under different RTT, packet loss, and window-size conditions.
+- Reliable file transfer over UDP
+- Go-Back-N with a configurable sliding window
+- Custom packet header with sequence number, acknowledgement number, flags, and window size
+- Packet drop option for retransmission tests
+- Throughput measurements for different RTT, loss, and window-size settings
 
-More detail:
+Related docs:
 
 - [Architecture notes](docs/architecture.md)
 - [Testing notes](docs/testing.md)
 
-## Purpose
+## Overview
 
-The goal of this project was to understand what TCP-like reliability actually requires under the hood. Instead of depending on TCP, I built the reliability mechanisms myself over UDP and tested how the protocol behaves under delay, packet loss, different window sizes, and forced retransmission scenarios.
-
-## What I Learned
-
-- How reliable transport can be built on top of an unreliable protocol like UDP.
-- How three-way handshakes, acknowledgements, and teardown logic work in practice.
-- How Go-Back-N and sliding windows affect throughput.
-- How packet loss, RTT, and retransmission timeouts influence performance.
-- How to validate file integrity with checksum comparison after transfer.
-- How to test network behavior using Mininet and `tc netem`.
+The protocol sends files between a client and a server using UDP sockets. Reliability is handled by the application instead of the transport layer. The sender keeps a sliding window of unacknowledged packets, and the receiver accepts packets in order while acknowledging the latest valid sequence number.
 
 ## Features
 
@@ -105,7 +96,7 @@ flowchart LR
 - Tests also use the Python standard library only
 - Linux or Mininet environment for the full network simulation
 
-The application can also be tested locally with loopback addresses, but the intended evaluation environment is Mininet.
+The application can also be tested locally with loopback addresses. Mininet is used for delay and packet-loss experiments.
 
 ## Usage
 
@@ -201,4 +192,4 @@ The project was tested with:
 - Random packet loss using `tc netem`
 - MD5 checksum comparison between the original and received files
 
-The detailed experiment results were documented separately during development.
+Detailed experiment notes were kept separately during development.

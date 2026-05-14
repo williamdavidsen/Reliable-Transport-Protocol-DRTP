@@ -1,6 +1,6 @@
 # Testing
 
-The project was tested with both local loopback runs and Mininet network simulations.
+Tests were run with local loopback and Mininet.
 
 <img src="screenshots/retransmission-test.png" alt="DRTP retransmission test" width="100%">
 
@@ -20,7 +20,7 @@ python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5 --ver
 
 ## Reliability Test
 
-The server can intentionally drop one packet to verify retransmission behavior:
+The server can intentionally drop one packet:
 
 ```bash
 python3 application.py -s -i 10.0.1.2 -p 8088 -d 5
@@ -44,13 +44,13 @@ Then run the client:
 python3 application.py -c -f iceland-safiqul.jpg -i 10.0.1.2 -p 8088 -w 5
 ```
 
-The expected behavior is that the client times out, retransmits the active Go-Back-N window, and completes the file transfer.
+Expected result: the client times out, retransmits the active Go-Back-N window, and completes the transfer.
 
-The client prints a transfer summary after data delivery, including packet count, send attempts, retransmission events, window size, and duration.
+After data delivery, the client prints packet count, send attempts, retransmission events, window size, and duration.
 
 ## Network Experiments
 
-The Mininet topology can be used to test:
+The Mininet topology is useful for:
 
 - Different RTT values, such as `50 ms`, `100 ms`, and `200 ms`
 - Random packet loss with `tc netem`
@@ -65,4 +65,4 @@ After a transfer, compare the original file with the received file:
 md5sum iceland-safiqul.jpg received_iceland-safiqul.jpg
 ```
 
-Matching hashes confirm that the file was transferred without corruption.
+Matching hashes confirm that the received file is identical to the original.
