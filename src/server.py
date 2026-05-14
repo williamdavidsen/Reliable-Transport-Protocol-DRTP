@@ -16,6 +16,24 @@ from protocol import (
     unpack_header,
 )
 
+
+def send_ack(server_socket, addr, ack):
+    server_socket.sendto(pack_header(ack=ack, flags=FLAG_ACK), addr)
+
+
+def send_fin_ack(server_socket, addr, seq):
+    server_socket.sendto(pack_header(ack=seq + 1, flags=FLAG_ACK | FLAG_FIN), addr)
+
+
+def parse_first_packet(packet):
+    filename_len = packet[HEADER_SIZE]
+    filename_start = HEADER_SIZE + 1
+    filename_end = filename_start + filename_len
+    filename = packet[filename_start:filename_end].decode()
+    data = packet[filename_end:]
+    return filename, data
+
+
 def server_start(ip, port, discard_seq, output_filename=None, verbose=False):
     """Receive a file reliably over UDP using DRTP."""
 
@@ -99,9 +117,8 @@ def server_start(ip, port, discard_seq, output_filename=None, verbose=False):
 
                         if flags & FLAG_FIN:
                             print("FIN packet is received")
-                            fin_ack = pack_header(ack=seq + 1, flags=FLAG_ACK | FLAG_FIN)
                             try:
-                                server_socket.sendto(fin_ack, addr)
+                                send_fin_ack(server_socket, addr, seq)
                             except socket.error as e:
                                 print("[-] Socket error during sendto: {}".format(e))
                             print("FIN ACK packet is sent")
@@ -116,12 +133,7 @@ def server_start(ip, port, discard_seq, output_filename=None, verbose=False):
                         # Accept and write the packet only if its sequence matches expectation
                         if seq == expected_seq:
                             if expected_seq == 1:
-                                # The first packet contains the filename and the start of the data
-                                filename_len = packet[HEADER_SIZE]
-                                filename_start = HEADER_SIZE + 1
-                                filename_end = filename_start + filename_len
-                                filename = packet[filename_start:filename_end].decode()
-                                data = packet[filename_end:]
+                                filename, data = parse_first_packet(packet)
                                 new_filename = output_filename or "received_" + filename
                                 # Ensure file does not overwrite existing file
                                 new_filename = get_unique_filename(new_filename)
@@ -150,9 +162,8 @@ def server_start(ip, port, discard_seq, output_filename=None, verbose=False):
                                     timestamp = datetime.now().strftime("%H:%M:%S.%f")
                                     print(f"{timestamp} -- packet {seq} is received")
                                 # Prepare and send ACK for received packet
-                                ack_header = pack_header(ack=seq, flags=FLAG_ACK)
                                 try:
-                                    server_socket.sendto(ack_header, addr)
+                                    send_ack(server_socket, addr, seq)
                                 except socket.error as e:
                                     print("[-] Socket error during sendto: {}".format(e))
                                     break
@@ -164,9 +175,8 @@ def server_start(ip, port, discard_seq, output_filename=None, verbose=False):
                                 if verbose:
                                     print(f"{datetime.now().strftime('%H:%M:%S.%f')} -- out-of-order packet {seq} is received")
                         else:
-                            ack_header = pack_header(ack=expected_seq - 1, flags=FLAG_ACK)
                             try:
-                                server_socket.sendto(ack_header, addr)
+                                send_ack(server_socket, addr, expected_seq - 1)
                             except socket.error as e:
                                 print("[-] Socket error during sendto: {}".format(e))
                                 break
