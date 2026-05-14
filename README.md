@@ -4,6 +4,14 @@ A Python implementation of a reliable file transfer protocol built on top of UDP
 
 I built this project to explore how reliable data transfer can be implemented without relying on TCP. DRTP handles connection setup, ordered delivery, acknowledgements, retransmissions, sliding windows, and connection teardown at the application layer.
 
+## Technical Highlights
+
+- Built reliable file transfer over UDP without using TCP reliability.
+- Implemented Go-Back-N with a configurable sliding window.
+- Added custom packet headers with sequence numbers, acknowledgements, flags, and window size.
+- Tested retransmission behavior with intentional packet drops.
+- Measured throughput under different RTT, packet loss, and window-size conditions.
+
 ## Purpose
 
 The goal of this project was to understand what TCP-like reliability actually requires under the hood. Instead of depending on TCP, I built the reliability mechanisms myself over UDP and tested how the protocol behaves under delay, packet loss, different window sizes, and forced retransmission scenarios.
@@ -35,6 +43,20 @@ The goal of this project was to understand what TCP-like reliability actually re
 | --- | --- |
 | <img src="docs/screenshots/client-transfer.png" alt="DRTP client transfer demo" width="100%"> | <img src="docs/screenshots/server-transfer.png" alt="DRTP server receiver demo" width="100%"> |
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Client[Client / Sender] -->|SYN| Server[Server / Receiver]
+    Server -->|SYN-ACK| Client
+    Client -->|ACK| Server
+    Client -->|UDP data packets| Network[Network delay / packet loss]
+    Network --> Server
+    Server -->|ACKs| Client
+    Client -->|FIN| Server
+    Server -->|FIN-ACK| Client
+```
+
 ## Project Structure
 
 ```text
@@ -64,6 +86,20 @@ The application can also be tested locally with loopback addresses, but the inte
 ## Usage
 
 Run the commands from the `src/` directory.
+
+### Quick Local Demo
+
+Terminal 1:
+
+```bash
+python3 application.py -s -i 127.0.0.1 -p 8088
+```
+
+Terminal 2:
+
+```bash
+python3 application.py -c -f iceland-safiqul.jpg -i 127.0.0.1 -p 8088 -w 5
+```
 
 ### Start the Server
 
