@@ -1,2 +1,5 @@
 370_documentation.pdf
 __pycache__/
+*.pyc
+*.log
+received_*
